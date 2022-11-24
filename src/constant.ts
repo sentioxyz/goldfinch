@@ -4,25 +4,17 @@ export const GF_CONFIG_ADDR_OLD = "0x4eb844Ff521B4A964011ac8ecd42d500725C95CC"
 export const GF_CONFIG_NEW_DEPLOY_BLOCK = 13941060 
 export const INTEREST_FROM_SENIOR_TO_JUNIOR = 0.2
 export const USDC_ETH_ORACLE = "0x986b5E1e1755e3C2440e960477f25201B0a8bbD4"
-/* 
-distinct contract address from MigratedTranchedPool:
 
-select distinct "contract_address" as contract
-From goldfinch."MigratedTranchedPool_evt_DepositMade"
+export const Membership_Collector = "0x5ccfa5fec4db2543d3995dc5419a13b6e99ea7a1"
+export const Membership_Vault = "0x375B906B25E00bdD43017400CD4cefb36FBF9c18"
+export const Capital_Ledger = "0x94e0bC3aedA93434B848C49752cfC58B1e7c5029"
+export const GFI_Ledger = "0xbc1081885da00404bd0108B70EC5aC0dbe98A077"
+export const FIDU = "0x6a445e9f40e0b97c92d0b8a3366cef1d67f700bf"
 
-\xefeb69edf6b6999b0e3f2fa856a2acf3bdea4ab5
-\x418749e294cabce5a714efccc22a8aade6f9db57
-\xc9bdd0d3b80cc6efe79a82d850f44ec9b55387ae
-\xd09a57127bc40d680be7cb061c2a6629fe71abef
-\xf74ea34ac88862b7ff419e60e476be2651433e68
-\x00c27fc71b159a346e179b4a1608a0865e8a7470
-\x1d596d28a7923a22aa013b0e7082bba23daa656b
-\xe32c22e4d95cae1fb805c60c9e0026ed57971bcf
-\x759f097f3153f5d62ff1c2d82ba78b6350f223e3
-\x89d7c618a4eef3065da8ad684859a547548e6169
-\xc13465ce9ae3aa184eb536f04fdc3f54d2def277
-\xaa2ccc5547f64c5dffd0a624eb4af2543a67ba65
-\xd43a4f3041069c6178b99d55295b00d0db955bb5
-\xe6c30756136e07eb5268c3232efbfbe645c1ba5a
-\xb26b42dd5771689d0a7faeea32825ff9710b9c11
-*/
+export const POOL_TOKEN = "0x57686612c601cb5213b01aa8e80afeb24bbd01df"
+export const STAKED_FIDU = "0xfd6ff39da508d281c2d255e9bbbfab34b6be60c3"
+
+export const GFI_DECIMAL = 18
+export const FIDU_DECIMAL = 18
+export const USDC_DECIMAL = 6
+export const Membership_Collector_Starting_Block = 15992888
