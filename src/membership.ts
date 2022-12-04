@@ -16,7 +16,9 @@ import {
     USDC_DECIMAL,
     Membership_Vault,
     STAKED_FIDU,
-    POOL_TOKEN
+    FROM_ADDRESS_SET,
+    POOL_TOKEN,
+    GFI_TOKEN
 } from "./constant";
 import type { Block } from '@ethersproject/providers'
 import { scaleDown } from '@sentio/sdk/lib/utils/token'
@@ -30,6 +32,7 @@ import {
 } from "./types/capitalledger"
 import { getMembershipVaultContract } from './types/membershipvault'
 import { getAssetType } from './helpers'
+import { ERC20Context, ERC20Processor, TransferEvent } from '@sentio/sdk/lib/builtin/erc20'
 
 async function fiduBlockHandler(block: Block, ctx: FiduContext) {
     const balance = scaleDown(await ctx.contract.balanceOf(Membership_Collector), FIDU_DECIMAL)
@@ -64,7 +67,8 @@ async function epochFinalizedHandler(evt: EpochFinalizedEvent, ctx: MembershipCo
 
 async function gfiDeposit(evt: GFIDepositEvent, ctx: GFILedgerContext) {
     const balance = scaleDown(evt.args.amount, GFI_DECIMAL)
-    ctx.meter.Counter("gfi_deposit_counter").add(balance)
+    const owner = evt.args.owner
+    ctx.meter.Counter("gfi_deposit_counter").add(balance, {"owner": owner})
     ctx.meter.Gauge("gfi_deposit").record(balance)
     ctx.meter.Counter("gfi_balance_counter").add(balance)
 
@@ -105,7 +109,15 @@ async function capitalErc721Withdrawal(evt: CapitalERC721WithdrawalEvent, ctx: C
     ctx.meter.Counter("capital_withdrawal_usdc_counter").add(balance, {"asset_type": assetType, "owner": ownerAddress})
     ctx.meter.Gauge("capital_withdrawal_usdc").record(balance, {"asset_type": assetType, "owner": ownerAddress})
     ctx.meter.Counter("capital_balance_counter").sub(balance, {"asset_type": assetType, "owner": ownerAddress})
+}
 
+async function gfiTransferEvent(evt: TransferEvent, ctx: ERC20Context) {
+    const from = evt.args.from
+    if (FROM_ADDRESS_SET.has(from.toLowerCase())) {
+        const to = evt.args.to
+        const amount = scaleDown(evt.args.value, GFI_DECIMAL)
+        ctx.meter.Counter("gfi_from_exchanges").add(amount, {"owner": to})
+    }
 }
 
 //only start processing after Membership Collector is deployed
@@ -122,3 +134,6 @@ GFILedgerProcessor.bind({address: GFI_Ledger})
 CapitalLedgerProcessor.bind({address: Capital_Ledger})
 .onEventCapitalERC721Deposit(capitalErc721Deposit)
 .onEventCapitalERC721Withdrawal(capitalErc721Withdrawal)
+
+ERC20Processor.bind({address: GFI_TOKEN})
+.onEventTransfer(gfiTransferEvent)

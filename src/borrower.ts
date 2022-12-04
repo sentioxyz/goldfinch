@@ -43,14 +43,14 @@ const paymentAppliedGauge = new Gauge("payment_applied", {
   sparse : true,
 })
 
+const poolFunded3 = new Gauge("pool_funded3", {
+  sparse : true,
+})
+
 for (let i = 0; i < goldfinchPools.data.length; i++) {
   const tranchedPool = goldfinchPools.data[i];
   POOL_ADDRESS_LOOKUP.set(tranchedPool.poolAddress, tranchedPool)
   CREDIT_ADDRESS_LOOKUP.set(tranchedPool.creditLineAddress, tranchedPool)
-}
-
-function shouldSample(blockNumber: number, sampleRate: number = SAMPLE_RATE, sampleStart: number = SAMPLE_START) {
-  return (blockNumber < sampleStart) || (blockNumber % sampleRate == 0)
 }
 
 function getPoolByAddress(address: string) {
@@ -142,11 +142,8 @@ async function InvestmentMadeInSenior (event: InvestmentMadeInSeniorEvent, ctx: 
   const poolInfo = getPoolByAddress(poolAddress)
   const ts = BN.from((await ctx.contract.provider.getBlock(event.blockNumber)).timestamp)
   
-  if (poolInfo !== undefined) {
-    ctx.meter.Counter("pool_funded2").add(ts, {"pool": poolName, "addr": poolAddress})
-  } else {
-    ctx.meter.Counter("pool_funded2").add(ts, {"pool": poolName, "addr": poolAddress})
-  }
+  ctx.meter.Counter("pool_funded2").add(ts, {"pool": poolName, "addr": poolAddress})
+  poolFunded3.record(ctx, ts, {"pool": poolName, "addr": poolAddress})
   
   var gfConfigAddress
   if (event.blockNumber > GF_CONFIG_NEW_DEPLOY_BLOCK) {
@@ -177,7 +174,7 @@ async function creditlineHandler (block: Block, ctx: CreditLineContext) {
   //   CreditLine.nextDueTime
 
   const nextDueTime = toBigDecimal(await ctx.contract.nextDueTime())
-  ctx.meter.Gauge('tranchedPool_nextdue').record(nextDueTime.multipliedBy(1000), {"pool": poolName})
+  ctx.meter.Gauge('tranchedPool_nextdue').record(nextDueTime, {"pool": poolName})
 
    // V2 request:
   //   Full repayment schedule by month (ie. Expected amount of cash to be paid back in Jan, Feb, March, April, etc. for every month from now until loan maturity)
@@ -204,10 +201,16 @@ async function creditlineHandler (block: Block, ctx: CreditLineContext) {
       ctx.meter.Gauge('tranchedPool_payment_schedule').record(termPayment, {'date': humanReadableDate, 'pool': poolName})
       paymentDate = paymentDate.plus(paymentPeriod.multipliedBy(SECONDS_PER_DAY))
     }
+
+  // 1: on-time
+  // 2: late
+  // 3: late for grace period
     if (ts.gt(nextDueTime.plus(graceLateness.multipliedBy(SECONDS_PER_DAY)))) {
-      ctx.meter.Gauge('is_late').record(1, {"pool": poolName})
+      ctx.meter.Gauge('is_late').record(3, {"pool": poolName})
+    } else if (ts.gt(nextDueTime)) {
+      ctx.meter.Gauge('is_late').record(2, {"pool": poolName})
     } else {
-      ctx.meter.Gauge('is_late').record(0, {"pool": poolName})
+      ctx.meter.Gauge('is_late').record(1, {"pool": poolName})
     }
   } else {
     ctx.meter.Gauge('tranchedPool_next_payment').record(0, {"pool": poolName})
