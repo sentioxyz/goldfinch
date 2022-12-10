@@ -1,14 +1,14 @@
 import { FiduContext, FiduProcessor, getFiduContract } from "./types/fidu";
-import { 
-    MembershipCollectorContext, 
+import {
+    MembershipCollectorContext,
     MembershipCollectorProcessor,
     EpochFinalizedEvent
 } from "./types/membershipcollector";
 import { Gauge } from "@sentio/sdk";
-import { 
-    Membership_Collector, 
-    FIDU, 
-    GFI_DECIMAL, 
+import {
+    Membership_Collector,
+    FIDU,
+    GFI_DECIMAL,
     Membership_Collector_Starting_Block,
     FIDU_DECIMAL,
     GFI_Ledger,
@@ -23,10 +23,10 @@ import {
 import type { Block } from '@ethersproject/providers'
 import { scaleDown } from '@sentio/sdk/lib/utils/token'
 import { GFILedgerProcessor, GFILedgerContext, GFIDepositEvent, GFIWithdrawalEvent } from './types/gfiledger'
-import { 
-    CapitalLedgerProcessor, 
-    CapitalLedgerContext, 
-    CapitalERC721DepositEvent, 
+import {
+    CapitalLedgerProcessor,
+    CapitalLedgerContext,
+    CapitalERC721DepositEvent,
     CapitalERC721WithdrawalEvent,
     getCapitalLedgerContract
 } from "./types/capitalledger"
@@ -36,25 +36,26 @@ import { ERC20Context, ERC20Processor, TransferEvent } from '@sentio/sdk/lib/bui
 
 async function fiduBlockHandler(block: Block, ctx: FiduContext) {
     const balance = scaleDown(await ctx.contract.balanceOf(Membership_Collector), FIDU_DECIMAL)
-    ctx.meter.Gauge("membership_fidu_balance").record(balance)    
+    ctx.meter.Gauge("membership_fidu_balance").record(balance)
 }
+
+const sparseGauge = Gauge.register("fidu_at_epoch_sparse", { sparse: true })
 
 async function epochFinalizedHandler(evt: EpochFinalizedEvent, ctx: MembershipCollectorContext) {
     const epoch = evt.args.epoch
     const totalRewards = evt.args.totalRewards
     const block = evt.blockNumber
     const balance = scaleDown(await getFiduContract(FIDU).balanceOf(Membership_Collector, {blockTag: evt.blockNumber}), FIDU_DECIMAL)
-    ctx.meter.Gauge("fidu_at_epoch").record(balance) 
-    const sparseGauge = Gauge.register("fidu_at_epoch_sparse", { sparse: true })
+    ctx.meter.Gauge("fidu_at_epoch").record(balance)
     sparseGauge.record(ctx, balance)
     const membershipVaultContract = getMembershipVaultContract(Membership_Vault)
 
     const numOfOwners = await membershipVaultContract.totalSupply({blockTag: block})
-    const totalAtEpoch = await membershipVaultContract.totalAtEpoch(epoch, {blockTag: block})    
+    const totalAtEpoch = await membershipVaultContract.totalAtEpoch(epoch, {blockTag: block})
     // position ID is 1-based
     for (var i = 1; i <= numOfOwners.toNumber(); i++) {
         const owner = await membershipVaultContract.ownerOf(i, {blockTag: block})
-        const value = await membershipVaultContract.currentValueOwnedBy(owner, {blockTag: block})        
+        const value = await membershipVaultContract.currentValueOwnedBy(owner, {blockTag: block})
         var reward
         if (!totalAtEpoch.eq(0)) {
             reward = value.div(totalAtEpoch).mul(totalRewards)

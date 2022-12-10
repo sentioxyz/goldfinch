@@ -1,6 +1,8 @@
 import { TestProcessorServer } from '@sentio/sdk/lib/testing'
 import { mockCreditLineCreatedLog } from "./types/goldfinchfactory/test-utils";
 
+jest.setTimeout(30000)
+
 describe('Test Processor', () => {
   const service = new TestProcessorServer(()=> require('./processor'), {
     1: "https://eth-mainnet.g.alchemy.com/v2/SAow9F_73wmx_Uj5yEcI_au8y9GXYYd5",
@@ -23,13 +25,17 @@ describe('Test Processor', () => {
     //
 
     const blockData = {
-      hash: '0x2b9b7cce1f17f3b7e1f3c2472cc806a07bee3f0baca07d021350950d81d73a42',
-      number: 13110369,
-      timestamp: 1647106437,
-      extraData: '0xe4b883e5bda9e7a59ee4bb99e9b1bc493421',
+      hash: '0x877c13959e71d4a7d234043ed7c853c3400a199b3dcf2b75376f5479a086aa3b',
+      number: 0xf5980a,
+      timestamp: 0x638996e7,
+      extraData: '0x68747470733a2f2f6574682d6275696c6465722e636f6d',
     }
 
-    const res = (await service.testBlock(blockData)).result
+    try {
+      const res = (await service.testBlock(blockData)).result
+    } catch (e) {
+      console.log(e)
+    }
 
   })
 })
