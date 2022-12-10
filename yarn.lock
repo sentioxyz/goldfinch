@@ -1030,10 +1030,10 @@
     "@noble/hashes" "~1.1.1"
     "@scure/base" "~1.1.0"
 
-"@sentio/sdk@^1.27.10":
-  version "1.30.0"
-  resolved "https://registry.yarnpkg.com/@sentio/sdk/-/sdk-1.30.0.tgz#9c56d42571fb75480fd6d98c52f22d31dfe38c86"
-  integrity sha512-VXyRreWNgch4p8P2h07vlj6WShK504AwwOp93pgSejGa0VYMx/FhoCCtOeCONnNxo6t1myRP26cxRpjJEN6Eew==
+"@sentio/sdk@^1.31.5":
+  version "1.32.0"
+  resolved "https://registry.yarnpkg.com/@sentio/sdk/-/sdk-1.32.0.tgz#5003577ca74ad7dd7f9941e3e6d10b8cde2a622e"
+  integrity sha512-gBm245hZXkjCAra1MAlXhrxvUjuC1Vm7I1ITJ5xU5QLCi/7W1NMMvNWtTTQKTRho0Qmnm+LO13mMPc8eopAPBw==
   dependencies:
     "@ethersproject/providers" "~5.7.0"
     "@project-serum/anchor" "^0.25.0"
@@ -1056,7 +1056,10 @@
     google-protobuf "^3.15.8"
     js-yaml "^4.1.0"
     nice-grpc "^2.0.0"
+    nice-grpc-client-middleware-retry "^2.0.1"
+    nice-grpc-error-details "^0.1.4"
     node-fetch "2"
+    open "^8.4.0"
     p-queue "^6.6.2"
     ts-loader "^9.3.0"
     typechain "^8.0.0"
@@ -2115,6 +2118,11 @@ deepmerge@^4.2.2:
   resolved "https://registry.yarnpkg.com/deepmerge/-/deepmerge-4.2.2.tgz#44d2ea3679b8f4d4ffba33f03d865fc1e7bf4955"
   integrity sha512-FJ3UgI4gIl+PHZm53knsuSFpE+nESMr7M4v9QcgB7S63Kj/6WqMiFQJpBBYz1Pt+66bZpP3Q7Lye0Oo9MPKEdg==
 
+define-lazy-prop@^2.0.0:
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/define-lazy-prop/-/define-lazy-prop-2.0.0.tgz#3f7ae421129bcaaac9bc74905c98a0009ec9ee7f"
+  integrity sha512-Ds09qNh8yw3khSjiJjiUInaGX9xlqZDY7JVryGxdxV7NPeuqQfplOpQ66yJFZut3jLa5zOwkXw1g9EI2uKh4Og==
+
 delay@^5.0.0:
   version "5.0.0"
   resolved "https://registry.yarnpkg.com/delay/-/delay-5.0.0.tgz#137045ef1b96e5071060dd5be60bf9334436bd1d"
@@ -2728,6 +2736,11 @@ is-core-module@^2.9.0:
   dependencies:
     has "^1.0.3"
 
+is-docker@^2.0.0, is-docker@^2.1.1:
+  version "2.2.1"
+  resolved "https://registry.yarnpkg.com/is-docker/-/is-docker-2.2.1.tgz#33eeabe23cfe86f14bde4408a02c0cfb853acdaa"
+  integrity sha512-F+i2BKsFrH66iaUFc0woD8sLy8getkwTwtOBjvs56Cx4CgJDeKQeqfz8wAYiSb8JOprWhHH5p77PbmYCvvUuXQ==
+
 is-fullwidth-code-point@^3.0.0:
   version "3.0.0"
   resolved "https://registry.yarnpkg.com/is-fullwidth-code-point/-/is-fullwidth-code-point-3.0.0.tgz#f116f8064fe90b3f7844a38997c0b75051269f1d"
@@ -2754,6 +2767,13 @@ is-stream@^2.0.0:
   version "2.0.1"
   resolved "https://registry.yarnpkg.com/is-stream/-/is-stream-2.0.1.tgz#fac1e3d53b97ad5a9d0ae9cef2389f5810a5c077"
   integrity sha512-hFoiJiTl63nn+kstHGBtewWSKnQLpyb155KHheA1l39uvtO9nWIop1p3udqPcUd/xbF1VLMO4n7OI6p7RbngDg==
+
+is-wsl@^2.2.0:
+  version "2.2.0"
+  resolved "https://registry.yarnpkg.com/is-wsl/-/is-wsl-2.2.0.tgz#74a4c76e77ca9fd3f932f290c17ea326cd157271"
+  integrity sha512-fKzAra0rGJUUBwGBgNkHZuToZcn+TtXHpeCgmkMJMMYx1sQDYaCSyjJBSCa2nH1DGm7s3n1oBnohoVTBaN7Lww==
+  dependencies:
+    is-docker "^2.0.0"
 
 isexe@^2.0.0:
   version "2.0.0"
@@ -3466,12 +3486,28 @@ neo-async@^2.6.2:
   resolved "https://registry.yarnpkg.com/neo-async/-/neo-async-2.6.2.tgz#b4aafb93e3aeb2d8174ca53cf163ab7d7308305f"
   integrity sha512-Yd3UES5mWCSqR+qNT93S3UoYUkqAZ9lLg8a7g9rimsWmYGK8cVToA4/sF3RrshdyV3sAGMXVUmpMYOw+dLpOuw==
 
+nice-grpc-client-middleware-retry@^2.0.1:
+  version "2.0.1"
+  resolved "https://registry.yarnpkg.com/nice-grpc-client-middleware-retry/-/nice-grpc-client-middleware-retry-2.0.1.tgz#2b70d606baa6360acf8e216348ee761be20b34b2"
+  integrity sha512-U3oWOkSXw2VnBRUOduMYq6pwJ358HjbbhEzupOypIY9UhCHfyT7CxFs49Fd7v0zdV+EsxxowlkheM1v30vmTxw==
+  dependencies:
+    abort-controller-x "^0.4.0"
+    nice-grpc-common "^2.0.0"
+
 nice-grpc-common@^2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/nice-grpc-common/-/nice-grpc-common-2.0.0.tgz#36c9b9cdc38d3b4aa8ad7abf120fd4737eff70ea"
   integrity sha512-8h/QraeDmScnbKLd5ImS+e7uUDxumvByBo6ILj1jLHjKlIa74WKHNSn54u7RmnJ5tFAYE70iTm8VWyvbTv82yg==
   dependencies:
     ts-error "^1.0.6"
+
+nice-grpc-error-details@^0.1.4:
+  version "0.1.4"
+  resolved "https://registry.yarnpkg.com/nice-grpc-error-details/-/nice-grpc-error-details-0.1.4.tgz#1f57c7be8a6f2ea2867492eeb578b84ee11154b3"
+  integrity sha512-zgP/pAwabqF1bZePgU4VJRZ2CTa3RmNH67bNFfHBT0bhfMO28C1RSOApf/8xrib7bhINf7YCm8ntTjmYnP83rQ==
+  dependencies:
+    nice-grpc-common "^2.0.0"
+    protobufjs "^7.1.2"
 
 nice-grpc@^2.0.0:
   version "2.0.1"
@@ -3549,6 +3585,15 @@ onetime@^5.1.2:
   integrity sha512-kbpaSSGJTWdAY5KPVeMOKXSrPtr8C8C7wodJbcsd51jRnmD+GZu8Y0VoU6Dm5Z4vWr0Ig/1NKuWRKf7j5aaYSg==
   dependencies:
     mimic-fn "^2.1.0"
+
+open@^8.4.0:
+  version "8.4.0"
+  resolved "https://registry.yarnpkg.com/open/-/open-8.4.0.tgz#345321ae18f8138f82565a910fdc6b39e8c244f8"
+  integrity sha512-XgFPPM+B28FtCCgSb9I+s9szOC1vZRSwgWsRUA5ylIxRTgKozqjOCrVOqGsYABPYK5qnfqClxZTFBa8PKt2v6Q==
+  dependencies:
+    define-lazy-prop "^2.0.0"
+    is-docker "^2.1.1"
+    is-wsl "^2.2.0"
 
 p-finally@^1.0.0:
   version "1.0.0"
@@ -3686,7 +3731,7 @@ prompts@^2.0.1:
     kleur "^3.0.3"
     sisteransi "^1.0.5"
 
-protobufjs@^7.0.0:
+protobufjs@^7.0.0, protobufjs@^7.1.2:
   version "7.1.2"
   resolved "https://registry.yarnpkg.com/protobufjs/-/protobufjs-7.1.2.tgz#a0cf6aeaf82f5625bffcf5a38b7cd2a7de05890c"
   integrity sha512-4ZPTPkXCdel3+L81yw3dG6+Kq3umdWKh7Dc7GW/CpNk4SX3hK58iPCWeCyhVTDrbkNeKrYNZ7EojM5WDaEWTLQ==
