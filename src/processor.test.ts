@@ -4,6 +4,8 @@ import { mockCreditLineCreatedLog } from "./types/goldfinchfactory/test-utils";
 jest.setTimeout(30000)
 
 describe('Test Processor', () => {
+  jest.setTimeout(3000000);
+
   const service = new TestProcessorServer(()=> require('./processor'), {
     1: "https://eth-mainnet.g.alchemy.com/v2/SAow9F_73wmx_Uj5yEcI_au8y9GXYYd5",
   })

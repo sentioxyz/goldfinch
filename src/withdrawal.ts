@@ -10,7 +10,7 @@ async function wrtOnBlock(block: Block, ctx: WithdrawalRequestTokenContext) {
     ctx.meter.Gauge("wrt_total_supply").record(totalSupply)
     const seniorPool = getSeniorPoolV2Contract(SENIOR_POOL_V2)
 
-    for (var i = 1; i < totalSupply.toNumber(); i++) {
+    for (var i = 0; i < totalSupply.toNumber(); i++) {
         const token = await ctx.contract.tokenByIndex(i)
         const withdrawal = await seniorPool.withdrawalRequest(token, { blockTag: block.number })
         const amount = scaleDown(withdrawal.fiduRequested, FIDU_DECIMAL)
