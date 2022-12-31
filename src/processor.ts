@@ -1,3 +1,3 @@
-// require("./borrower")
+require("./borrower")
 require("./withdrawal")
 require("./membership")

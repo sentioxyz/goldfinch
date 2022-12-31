@@ -20,8 +20,20 @@ async function wrtOnBlock(block: Block, ctx: WithdrawalRequestTokenContext) {
 
 async function seniorPoolOnBlock(block: Block, ctx: SeniorPoolV2Context) {
     const currentEpoch = await ctx.contract.currentEpoch()
-    const fiduRequested = scaleDown(currentEpoch[1], FIDU_DECIMAL)
+    const fiduRequested = scaleDown(currentEpoch.fiduRequested, FIDU_DECIMAL)
+    const sharePrice = scaleDown(await ctx.contract.sharePrice(), FIDU_DECIMAL)
+    const usdcAvailable = scaleDown(await ctx.contract.usdcAvailable(), USDC_DECIMAL)
+    var usdcPercentage
+    if (!usdcAvailable.eq(0)) {
+        usdcPercentage = (fiduRequested).multipliedBy(sharePrice).div(usdcAvailable)
+    } else {
+        usdcPercentage = 0
+    }
     ctx.meter.Gauge("fidu_requested").record(fiduRequested)
+    ctx.meter.Gauge("share_price").record(sharePrice)
+    ctx.meter.Gauge("usdc_avail").record(usdcAvailable)
+    ctx.meter.Gauge("usdc_percentage").record(usdcPercentage)
+
 
 }
 
@@ -49,7 +61,8 @@ WithdrawalRequestTokenProcessor.bind({address: WRT_ADDR})
 .onBlock(wrtOnBlock)
 
 SeniorPoolV2Processor.bind({address: SENIOR_POOL_V2, startBlock: SENIOR_POOL_V2_START})
-.onBlock(seniorPoolOnBlock)
+.onTimeInterval(seniorPoolOnBlock, 5, 300)
+// .onBlock(seniorPoolOnBlock)
 .onEventEpochEnded(epochEnded)
 .onEventWithdrawalMade(withdrawalMade)
 .onEventWithdrawalCanceled(withdrawlCanceled)
