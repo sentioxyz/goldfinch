@@ -1,4 +1,4 @@
-import { 
+import {
   PaymentAppliedEvent,
   TrancheLockedEvent,
   getTranchedPoolContract
@@ -98,9 +98,9 @@ const PaymentAppliedEventHandler = async function(event: PaymentAppliedEvent, ct
   const paymentTime = BN.from((await ctx.contract.provider.getBlock(event.blockNumber)).timestamp)
   const creditLine = await getTranchedPoolContract(event.address).creditLine({blockTag: event.blockNumber - 1})
   // 5 is the index for LatenessGracePeriodInDays see https://github.com/goldfinch-eng/mono/blob/7d8721246dfdc925512f1dd44c653707d62158ff/packages/protocol/contracts/protocol/core/ConfigOptions.sol#L23
-  
+
   var graceLateness
-  if (ctx.blockNumber.toNumber() < configStartBlock) {
+  if (ctx.blockNumber < configStartBlock) {
     graceLateness = BN.from(45)
   } else {
     graceLateness = (await getGoldfinchConfigContract(GF_CONFIG_ADDR).getNumber(5, {blockTag: event.blockNumber - 1})) as BigNumber
@@ -141,10 +141,10 @@ async function InvestmentMadeInSenior (event: InvestmentMadeInSeniorEvent, ctx: 
   const poolName = getNameByAddress(poolAddress)
   const poolInfo = getPoolByAddress(poolAddress)
   const ts = BN.from((await ctx.contract.provider.getBlock(event.blockNumber)).timestamp)
-  
+
   ctx.meter.Counter("pool_funded2").add(ts, {"pool": poolName, "addr": poolAddress})
   poolFunded3.record(ctx, ts, {"pool": poolName, "addr": poolAddress})
-  
+
   var gfConfigAddress
   if (event.blockNumber > GF_CONFIG_NEW_DEPLOY_BLOCK) {
     gfConfigAddress = GF_CONFIG_ADDR
@@ -170,7 +170,7 @@ async function creditlineHandler (block: Block, ctx: CreditLineContext) {
   //   return
   // }
   // added in V2 for
-  //   next payment due	
+  //   next payment due
   //   CreditLine.nextDueTime
 
   const nextDueTime = toBigDecimal(await ctx.contract.nextDueTime())
@@ -178,12 +178,12 @@ async function creditlineHandler (block: Block, ctx: CreditLineContext) {
 
    // V2 request:
   //   Full repayment schedule by month (ie. Expected amount of cash to be paid back in Jan, Feb, March, April, etc. for every month from now until loan maturity)
-  // Requires manual calculation, but involves using creditLine.paymentPeriodInDays (eg. if 30, then payments are made every 30 days) and creditLine.nextDueTime (tells you exact time of next expected payment). 
+  // Requires manual calculation, but involves using creditLine.paymentPeriodInDays (eg. if 30, then payments are made every 30 days) and creditLine.nextDueTime (tells you exact time of next expected payment).
   const interestApr = scaleDown(await ctx.contract.interestApr(), 18)
   const termEnd = toBigDecimal(await ctx.contract.termEndTime())
   const paymentPeriod = toBigDecimal(await ctx.contract.paymentPeriodInDays())
   var graceLateness
-  if (ctx.blockNumber.toNumber() < configStartBlock) {
+  if (ctx.blockNumber < configStartBlock) {
     graceLateness = new BigDecimal(45)
   } else {
     graceLateness = toBigDecimal((await getGoldfinchConfigContract(GF_CONFIG_ADDR).getNumber(5, {blockTag: block.number})) as BigNumber)
@@ -223,7 +223,7 @@ async function tranchedPoolHandler(block: Block, ctx: TranchedPoolContext) {
   var pool = getPoolByAddress(ctx.address)
 
   var leverageRatio
-  if (ctx.blockNumber.toNumber() < configStartBlock) {
+  if (ctx.blockNumber < configStartBlock) {
     leverageRatio = 3
   } else {
     leverageRatio = toBigDecimal((await getGoldfinchConfigContract(GF_CONFIG_ADDR).getNumber(9, {blockTag: block.number})) as BigNumber).div(BigDecimal(10).pow(18))
@@ -234,7 +234,7 @@ if (pool == undefined) {
     return
   }
   pool = pool!
-  if (pool.version > 0) 
+  if (pool.version > 0)
   {
     const creditLine = await ctx.contract.creditLine()
     const juniorBalance = (await ctx.contract.getTranche(2))[1]
@@ -265,7 +265,7 @@ const trancheLockedEventHandler = async function(event:TrancheLockedEvent, ctx: 
   const poolName = getNameByAddress(event.address)
   if (trancheId.eq(1)) {
     // for V2 request:
-    //     next payment due	
+    //     next payment due
     // CreditLine.nextDueTime
     const ts = BN.from((await ctx.contract.provider.getBlock(event.blockNumber)).timestamp)
     // TODO: temp workaround, use counter so we can preserve the value for bar gauge
@@ -274,7 +274,6 @@ const trancheLockedEventHandler = async function(event:TrancheLockedEvent, ctx: 
 }
 
 for (let i = 0; i < 12; i++) {
-
   const tranchedPool = goldfinchPools.data[i];
   CreditLineProcessor.bind({address: tranchedPool.creditLineAddress, startBlock: tranchedPool.creditLineStartBlock})
         .onBlock(creditlineHandler)
