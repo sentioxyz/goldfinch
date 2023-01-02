@@ -2,10 +2,10 @@
   "name": "@sentio/goldfinch",
   "version": "1.0.0",
   "dependencies": {
-    "@sentio/sdk": "^1.37.1",
-    "@sentio/cli": "^1.1.1"
+    "@sentio/sdk": "^1.37.4"
   },
   "devDependencies": {
+    "@sentio/cli": "^1.1.3",
     "@types/jest": "^28.0.0",
     "jest": "^28.0.1",
     "ts-jest": "^28.0.8",
