@@ -267,7 +267,7 @@ const trancheLockedEventHandler = async function(event:TrancheLockedEvent, ctx: 
     // for V2 request:
     //     next payment due
     // CreditLine.nextDueTime
-    const ts = BN.from((await ctx.contract.provider.getBlock(event.blockNumber)).timestamp)
+    const ts = BN.from(ctx.timestamp.getSeconds())
     // TODO: temp workaround, use counter so we can preserve the value for bar gauge
     ctx.meter.Counter("pool_funded").add(ts, {"pool": poolName})
   }
