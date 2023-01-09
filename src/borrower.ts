@@ -95,7 +95,7 @@ const PaymentAppliedEventHandler = async function(event: PaymentAppliedEvent, ct
   ctx.meter.Counter("payment_applied_count").add(1, {"pool": poolName})
 
   //determine if payment is late, used in V2
-  const paymentTime = BN.from((await ctx.contract.provider.getBlock(event.blockNumber)).timestamp)
+  const paymentTime = BN.from(ctx.timestamp.getTime() / 1000)
   const creditLine = await getTranchedPoolContract(event.address).creditLine({blockTag: event.blockNumber - 1})
   // 5 is the index for LatenessGracePeriodInDays see https://github.com/goldfinch-eng/mono/blob/7d8721246dfdc925512f1dd44c653707d62158ff/packages/protocol/contracts/protocol/core/ConfigOptions.sol#L23
 
@@ -109,7 +109,7 @@ const PaymentAppliedEventHandler = async function(event: PaymentAppliedEvent, ct
   const balance = (await getCreditLineContract(creditLine).balance({blockTag: event.blockNumber - 1}))
   const isLate = isPaymentLate(paymentTime, nextDueTime, balance)
   const isLateForGracePeriod = isPaymentLateForGracePeriod(paymentTime, nextDueTime, graceLateness, balance)
-  const ts = BN.from((await ctx.contract.provider.getBlock(event.blockNumber)).timestamp * 1000)
+  const ts = BN.from(ctx.timestamp.getTime())
   const humanReadableDate = new Date(ts.toNumber()).toISOString().split('T')[0]
 
   // const isPaymentLate = await getCreditLineContract(event.address).isLate({blockTag: event.blockNumber - 1})
@@ -140,7 +140,7 @@ async function InvestmentMadeInSenior (event: InvestmentMadeInSeniorEvent, ctx: 
   const poolAddress = event.args.tranchedPool.toLowerCase()
   const poolName = getNameByAddress(poolAddress)
   const poolInfo = getPoolByAddress(poolAddress)
-  const ts = BN.from((await ctx.contract.provider.getBlock(event.blockNumber)).timestamp)
+  const ts = BN.from(ctx.timestamp.getTime() / 1000)
 
   ctx.meter.Counter("pool_funded2").add(ts, {"pool": poolName, "addr": poolAddress})
   poolFunded3.record(ctx, ts, {"pool": poolName, "addr": poolAddress})
@@ -267,7 +267,7 @@ const trancheLockedEventHandler = async function(event:TrancheLockedEvent, ctx: 
     // for V2 request:
     //     next payment due
     // CreditLine.nextDueTime
-    const ts = BN.from(ctx.timestamp.getSeconds())
+    const ts = BN.from(ctx.timestamp.getTime() / 1000)
     // TODO: temp workaround, use counter so we can preserve the value for bar gauge
     ctx.meter.Counter("pool_funded").add(ts, {"pool": poolName})
   }
