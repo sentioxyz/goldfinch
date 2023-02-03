@@ -1,9 +1,9 @@
-import { FiduContext, FiduProcessor, getFiduContract } from "./types/fidu";
+import { FiduContext, FiduProcessor, getFiduContract } from "./types/fidu/index.js";
 import {
     MembershipCollectorContext,
     MembershipCollectorProcessor,
     EpochFinalizedEvent
-} from "./types/membershipcollector";
+} from "./types/membershipcollector/index.js";
 import { Gauge } from "@sentio/sdk";
 import {
     Membership_Collector,
@@ -19,20 +19,20 @@ import {
     FROM_ADDRESS_SET,
     POOL_TOKEN,
     GFI_TOKEN
-} from "./constant";
-import type { Block } from '@ethersproject/providers'
-import { scaleDown } from '@sentio/sdk/lib/utils/token'
-import { GFILedgerProcessor, GFILedgerContext, GFIDepositEvent, GFIWithdrawalEvent } from './types/gfiledger'
+} from "./constant.js";
+import { Block } from 'ethers'
+import { scaleDown } from '@sentio/sdk'
+import { GFILedgerProcessor, GFILedgerContext, GFIDepositEvent, GFIWithdrawalEvent } from './types/gfiledger/index.js'
 import {
     CapitalLedgerProcessor,
     CapitalLedgerContext,
     CapitalERC721DepositEvent,
     CapitalERC721WithdrawalEvent,
     getCapitalLedgerContract
-} from "./types/capitalledger"
-import { getMembershipVaultContract } from './types/membershipvault'
-import { getAssetType } from './helpers'
-import { ERC20Context, ERC20Processor, TransferEvent } from '@sentio/sdk/lib/builtin/erc20'
+} from "./types/capitalledger/index.js"
+import { getMembershipVaultContract } from './types/membershipvault/index.js'
+import { getAssetType } from './helpers.js'
+import { ERC20Context, ERC20Processor, TransferEvent } from '@sentio/sdk/eth/builtin/erc20'
 
 async function fiduBlockHandler(block: Block, ctx: FiduContext) {
     const balance = scaleDown(await ctx.contract.balanceOf(Membership_Collector), FIDU_DECIMAL)
@@ -53,12 +53,12 @@ async function epochFinalizedHandler(evt: EpochFinalizedEvent, ctx: MembershipCo
     const numOfOwners = await membershipVaultContract.totalSupply({blockTag: block})
     const totalAtEpoch = await membershipVaultContract.totalAtEpoch(epoch, {blockTag: block})
     // position ID is 1-based
-    for (var i = 1; i <= numOfOwners.toNumber(); i++) {
+    for (var i = 1; i <= numOfOwners; i++) {
         const owner = await membershipVaultContract.ownerOf(i, {blockTag: block})
         const value = await membershipVaultContract.currentValueOwnedBy(owner, {blockTag: block})
-        var reward
-        if (!totalAtEpoch.eq(0)) {
-            reward = value.div(totalAtEpoch).mul(totalRewards)
+        let reward
+        if (totalAtEpoch !== 0n) {
+            reward = value * totalRewards / totalAtEpoch
         } else {
             reward = 0
         }
@@ -67,7 +67,7 @@ async function epochFinalizedHandler(evt: EpochFinalizedEvent, ctx: MembershipCo
 }
 
 async function gfiDeposit(evt: GFIDepositEvent, ctx: GFILedgerContext) {
-    const balance = scaleDown(evt.args.amount, GFI_DECIMAL)
+    const balance = evt.args.amount.scaleDown(GFI_DECIMAL)
     const owner = evt.args.owner
     ctx.meter.Counter("gfi_deposit_counter").add(balance, {"owner": owner})
     ctx.meter.Gauge("gfi_deposit").record(balance)
@@ -123,7 +123,7 @@ async function gfiTransferEvent(evt: TransferEvent, ctx: ERC20Context) {
 
 //only start processing after Membership Collector is deployed
 FiduProcessor.bind({address: FIDU, startBlock: Membership_Collector_Starting_Block})
-.onBlock(fiduBlockHandler)
+.onBlockInterval(fiduBlockHandler)
 
 MembershipCollectorProcessor.bind({address: Membership_Collector})
 .onEventEpochFinalized(epochFinalizedHandler)

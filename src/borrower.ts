@@ -2,21 +2,18 @@ import {
   PaymentAppliedEvent,
   TrancheLockedEvent,
   getTranchedPoolContract
-} from './types/tranchedpool';
-import { InvestmentMadeInSeniorEvent, SeniorPoolContext, SeniorPoolProcessor } from './types/seniorpool';
-import { CreditLineContext, CreditLineProcessor, CreditLineProcessorTemplate, getCreditLineContract } from './types/creditline'
-import { getGoldfinchConfigContract } from './types/goldfinchconfig';
-import * as goldfinchPools from "./goldfinchPools.json"
-import { TranchedPoolContext, TranchedPoolProcessor } from './types/tranchedpool';
-import { conversion } from "@sentio/sdk/lib/utils"
-const toBigDecimal = conversion.toBigDecimal
+} from './types/tranchedpool/index.js';
+import { InvestmentMadeInSeniorEvent, SeniorPoolContext, SeniorPoolProcessor } from './types/seniorpool/index.js';
+import { CreditLineContext, CreditLineProcessor, CreditLineProcessorTemplate, getCreditLineContract } from './types/creditline/index.js'
+import { getGoldfinchConfigContract } from './types/goldfinchconfig/index.js';
+import { goldfinchPools } from './goldfinchPools.js';
+import { TranchedPoolContext, TranchedPoolProcessor } from './types/tranchedpool/index.js';
 import { BigDecimal, Gauge } from '@sentio/sdk'
-import type { BigNumber } from 'ethers'
-import type { Block } from '@ethersproject/providers'
-import  { BigNumber as BN } from 'ethers'
+import type { Block } from 'ethers'
 
-import { GF_CONFIG_ADDR, SENIOR_POOL_ADDR, GF_CONFIG_NEW_DEPLOY_BLOCK, GF_CONFIG_ADDR_OLD } from './constant'
-import { DAYS_PER_YEAR, isPaymentLate, isPaymentLateForGracePeriod, SECONDS_PER_DAY } from './helpers';
+import { GF_CONFIG_ADDR, SENIOR_POOL_ADDR, GF_CONFIG_NEW_DEPLOY_BLOCK, GF_CONFIG_ADDR_OLD } from './constant.js'
+import { DAYS_PER_YEAR, isPaymentLate, isPaymentLateForGracePeriod, SECONDS_PER_DAY } from './helpers.js';
+import { scaleDown } from "@sentio/sdk";
 
 interface PoolItem {
   auto?: boolean;
@@ -39,15 +36,17 @@ const SAMPLE_START = 15000000
 const POOL_ADDRESS_LOOKUP = new Map<string, PoolItem>()
 const CREDIT_ADDRESS_LOOKUP = new Map<string, PoolItem>()
 
-const paymentAppliedGauge = new Gauge("payment_applied", {
+const paymentAppliedGauge = Gauge.register("payment_applied", {
   sparse : true,
 })
 
-const poolFunded3 = new Gauge("pool_funded3", {
+const poolFunded3 = Gauge.register("pool_funded3", {
   sparse : true,
 })
 
+// @ts-ignore
 for (let i = 0; i < goldfinchPools.data.length; i++) {
+  // @ts-ignore
   const tranchedPool = goldfinchPools.data[i];
   POOL_ADDRESS_LOOKUP.set(tranchedPool.poolAddress, tranchedPool)
   CREDIT_ADDRESS_LOOKUP.set(tranchedPool.creditLineAddress, tranchedPool)
@@ -74,14 +73,11 @@ function getNameByAddress(address: string) {
   }
 }
 
-function scaleDown(amount: BigNumber, decimal: number) {
-  return toBigDecimal(amount).div(BigDecimal(10).pow(decimal))
-}
 
 //MigratedTranchedPool_evt_PaymentApplied
 const PaymentAppliedEventHandler = async function(event: PaymentAppliedEvent, ctx: TranchedPoolContext) {
-  const interestAmount = toBigDecimal(event.args.interestAmount.sub(event.args.reserveAmount)).div(BigDecimal(10).pow(decimal))
-  const principalAmount = toBigDecimal(event.args.principalAmount).div(BigDecimal(10).pow(decimal))
+  const interestAmount = scaleDown(event.args.interestAmount - event.args.reserveAmount, decimal)
+  const principalAmount = scaleDown(event.args.principalAmount, decimal)
   const poolName = getNameByAddress(event.address)
   // used in V2 for the following request:
   //   total interest paid
@@ -95,22 +91,22 @@ const PaymentAppliedEventHandler = async function(event: PaymentAppliedEvent, ct
   ctx.meter.Counter("payment_applied_count").add(1, {"pool": poolName})
 
   //determine if payment is late, used in V2
-  const paymentTime = BN.from(ctx.timestamp.getTime() / 1000)
+  const paymentTime = BigInt(ctx.timestamp.getTime()) / 1000n
   const creditLine = await getTranchedPoolContract(event.address).creditLine({blockTag: event.blockNumber - 1})
   // 5 is the index for LatenessGracePeriodInDays see https://github.com/goldfinch-eng/mono/blob/7d8721246dfdc925512f1dd44c653707d62158ff/packages/protocol/contracts/protocol/core/ConfigOptions.sol#L23
 
   var graceLateness
   if (ctx.blockNumber < configStartBlock) {
-    graceLateness = BN.from(45)
+    graceLateness = 45n
   } else {
-    graceLateness = (await getGoldfinchConfigContract(GF_CONFIG_ADDR).getNumber(5, {blockTag: event.blockNumber - 1})) as BigNumber
+    graceLateness = (await getGoldfinchConfigContract(GF_CONFIG_ADDR).getNumber(5, {blockTag: event.blockNumber - 1}))
   }
   const nextDueTime = (await getCreditLineContract(creditLine).nextDueTime({blockTag: event.blockNumber - 1}))
   const balance = (await getCreditLineContract(creditLine).balance({blockTag: event.blockNumber - 1}))
   const isLate = isPaymentLate(paymentTime, nextDueTime, balance)
   const isLateForGracePeriod = isPaymentLateForGracePeriod(paymentTime, nextDueTime, graceLateness, balance)
-  const ts = BN.from(ctx.timestamp.getTime())
-  const humanReadableDate = new Date(ts.toNumber()).toISOString().split('T')[0]
+  const ts = ctx.timestamp.getTime()
+  const humanReadableDate = new Date(ts).toISOString().split('T')[0]
 
   // const isPaymentLate = await getCreditLineContract(event.address).isLate({blockTag: event.blockNumber - 1})
   // const isPaymentWithinGracePeriod = await getCreditLineContract(event.address).withinPrincipalGracePeriod({blockTag: event.blockNumber - 1})
@@ -140,7 +136,7 @@ async function InvestmentMadeInSenior (event: InvestmentMadeInSeniorEvent, ctx: 
   const poolAddress = event.args.tranchedPool.toLowerCase()
   const poolName = getNameByAddress(poolAddress)
   const poolInfo = getPoolByAddress(poolAddress)
-  const ts = BN.from(ctx.timestamp.getTime() / 1000)
+  const ts = BigInt(ctx.timestamp.getTime()) / 1000n
 
   ctx.meter.Counter("pool_funded2").add(ts, {"pool": poolName, "addr": poolAddress})
   poolFunded3.record(ctx, ts, {"pool": poolName, "addr": poolAddress})
@@ -152,7 +148,7 @@ async function InvestmentMadeInSenior (event: InvestmentMadeInSeniorEvent, ctx: 
     gfConfigAddress = GF_CONFIG_ADDR_OLD
   }
 
-  const leverageRatio = toBigDecimal((await getGoldfinchConfigContract(gfConfigAddress).getNumber(9, {blockTag: event.blockNumber})) as BigNumber).div(BigDecimal(10).pow(18))
+  const leverageRatio =scaleDown(await getGoldfinchConfigContract(gfConfigAddress).getNumber(9, {blockTag: event.blockNumber}), 18)
 
   ctx.meter.Counter('leverage_ratio2').add(leverageRatio, {pool: poolName})
 }
@@ -173,23 +169,24 @@ async function creditlineHandler (block: Block, ctx: CreditLineContext) {
   //   next payment due
   //   CreditLine.nextDueTime
 
-  const nextDueTime = toBigDecimal(await ctx.contract.nextDueTime())
+  const nextDueTime = (await ctx.contract.nextDueTime()).asBigDecimal()
   ctx.meter.Gauge('tranchedPool_nextdue').record(nextDueTime, {"pool": poolName})
 
    // V2 request:
   //   Full repayment schedule by month (ie. Expected amount of cash to be paid back in Jan, Feb, March, April, etc. for every month from now until loan maturity)
   // Requires manual calculation, but involves using creditLine.paymentPeriodInDays (eg. if 30, then payments are made every 30 days) and creditLine.nextDueTime (tells you exact time of next expected payment).
+
   const interestApr = scaleDown(await ctx.contract.interestApr(), 18)
-  const termEnd = toBigDecimal(await ctx.contract.termEndTime())
-  const paymentPeriod = toBigDecimal(await ctx.contract.paymentPeriodInDays())
+  const termEnd = (await ctx.contract.termEndTime()).asBigDecimal()
+  const paymentPeriod = (await ctx.contract.paymentPeriodInDays()).asBigDecimal()
   var graceLateness
   if (ctx.blockNumber < configStartBlock) {
     graceLateness = new BigDecimal(45)
   } else {
-    graceLateness = toBigDecimal((await getGoldfinchConfigContract(GF_CONFIG_ADDR).getNumber(5, {blockTag: block.number})) as BigNumber)
+    graceLateness = (await getGoldfinchConfigContract(GF_CONFIG_ADDR).getNumber(5, {blockTag: block.number})).asBigDecimal()
   }
   if (!paymentPeriod.eq(0) && !termEnd.eq(0) && !nextDueTime.eq(0)) {
-    const numOfTerms = termEnd.minus(nextDueTime).div(paymentPeriod.multipliedBy(SECONDS_PER_DAY)).integerValue(BigDecimal.ROUND_CEIL)
+    const numOfTerms = termEnd.minus(nextDueTime).div(paymentPeriod.multipliedBy(SECONDS_PER_DAY.asBigDecimal())).integerValue(BigDecimal.ROUND_CEIL)
     const termInterest = interestApr.multipliedBy(paymentPeriod).div(DAYS_PER_YEAR)
     const termPayment = loanBalance.multipliedBy(termInterest)
 
@@ -199,13 +196,13 @@ async function creditlineHandler (block: Block, ctx: CreditLineContext) {
       const unixTime = paymentDate.toNumber()
       const humanReadableDate = new Date(unixTime * 1000).toISOString().split('T')[0]
       ctx.meter.Gauge('tranchedPool_payment_schedule').record(termPayment, {'date': humanReadableDate, 'pool': poolName})
-      paymentDate = paymentDate.plus(paymentPeriod.multipliedBy(SECONDS_PER_DAY))
+      paymentDate = paymentDate.plus(paymentPeriod.multipliedBy(SECONDS_PER_DAY.asBigDecimal()))
     }
 
   // 1: on-time
   // 2: late
   // 3: late for grace period
-    if (ts.gt(nextDueTime.plus(graceLateness.multipliedBy(SECONDS_PER_DAY)))) {
+    if (ts.gt(nextDueTime.plus(graceLateness.multipliedBy(SECONDS_PER_DAY.asBigDecimal())))) {
       ctx.meter.Gauge('is_late').record(3, {"pool": poolName})
     } else if (ts.gt(nextDueTime)) {
       ctx.meter.Gauge('is_late').record(2, {"pool": poolName})
@@ -226,7 +223,7 @@ async function tranchedPoolHandler(block: Block, ctx: TranchedPoolContext) {
   if (ctx.blockNumber < configStartBlock) {
     leverageRatio = 3
   } else {
-    leverageRatio = toBigDecimal((await getGoldfinchConfigContract(GF_CONFIG_ADDR).getNumber(9, {blockTag: block.number})) as BigNumber).div(BigDecimal(10).pow(18))
+    leverageRatio = scaleDown(await getGoldfinchConfigContract(GF_CONFIG_ADDR).getNumber(9, {blockTag: block.number}),18)
   }
   ctx.meter.Gauge('leverage_ratio').record(leverageRatio)
 
@@ -239,11 +236,11 @@ if (pool == undefined) {
     const creditLine = await ctx.contract.creditLine()
     const juniorBalance = (await ctx.contract.getTranche(2))[1]
     const seniorBalance = (await ctx.contract.getTranche(1))[1]
-    const totalDeployed = juniorBalance.add(seniorBalance)
+    const totalDeployed = juniorBalance + seniorBalance
     ctx.meter.Gauge('senior_tranche_balance').record(scaleDown(seniorBalance, 6), {"pool": poolName})
     ctx.meter.Gauge('junior_tranche_balance').record(scaleDown(juniorBalance, 6), {"pool": poolName})
-    if (!totalDeployed.eq(0)) {
-      const seniorPortion = toBigDecimal(seniorBalance).div(toBigDecimal(totalDeployed))
+    if (totalDeployed !== 0n) {
+      const seniorPortion = seniorBalance.asBigDecimal().div(totalDeployed.asBigDecimal())
 
       const interestApr = scaleDown(await getCreditLineContract(creditLine).interestApr(), 18)
 
@@ -263,23 +260,24 @@ if (pool == undefined) {
 const trancheLockedEventHandler = async function(event:TrancheLockedEvent, ctx: TranchedPoolContext) {
   const trancheId = event.args.trancheId
   const poolName = getNameByAddress(event.address)
-  if (trancheId.eq(1)) {
+  if (trancheId === 1n) {
     // for V2 request:
     //     next payment due
     // CreditLine.nextDueTime
-    const ts = BN.from(ctx.timestamp.getTime() / 1000)
+    const ts = BigInt(ctx.timestamp.getTime()) / 1000n
     // TODO: temp workaround, use counter so we can preserve the value for bar gauge
     ctx.meter.Counter("pool_funded").add(ts, {"pool": poolName})
   }
 }
 
 for (let i = 0; i < 12; i++) {
+  // @ts-ignore
   const tranchedPool = goldfinchPools.data[i];
   CreditLineProcessor.bind({address: tranchedPool.creditLineAddress, startBlock: tranchedPool.creditLineStartBlock})
-        .onBlock(creditlineHandler)
+      .onBlockInterval(creditlineHandler)
 
   TranchedPoolProcessor.bind({address: tranchedPool.poolAddress, startBlock: tranchedPool.poolStartBlock})
-  .onBlock(tranchedPoolHandler)
+  .onBlockInterval(tranchedPoolHandler)
   .onEventPaymentApplied(PaymentAppliedEventHandler)
   .onEventTrancheLocked(trancheLockedEventHandler)
 }

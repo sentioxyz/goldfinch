@@ -1,16 +1,16 @@
-import { FIDU, FIDU_DECIMAL, SENIOR_POOL_V2, USDC_DECIMAL, WRT_ADDR, SENIOR_POOL_V2_START, ZAPPER } from "./constant";
-import type { Block } from '@ethersproject/providers'
-import { scaleDown } from '@sentio/sdk/lib/utils/token'
-import { EpochEndedEvent, SeniorPoolV2Context, SeniorPoolV2Processor, WithdrawalCanceledEvent, WithdrawalMadeEvent } from "./types/seniorpoolv2";
-import { WithdrawalRequestTokenContext, WithdrawalRequestTokenProcessor } from "./types/withdrawalrequesttoken";
-import { getSeniorPoolV2Contract } from "./types/seniorpoolv2";
+import { FIDU, FIDU_DECIMAL, SENIOR_POOL_V2, USDC_DECIMAL, WRT_ADDR, SENIOR_POOL_V2_START, ZAPPER } from "./constant.js";
+import { Block } from 'ethers'
+import { scaleDown } from '@sentio/sdk'
+import { EpochEndedEvent, SeniorPoolV2Context, SeniorPoolV2Processor, WithdrawalCanceledEvent, WithdrawalMadeEvent } from "./types/seniorpoolv2/index.js";
+import { WithdrawalRequestTokenContext, WithdrawalRequestTokenProcessor } from "./types/withdrawalrequesttoken/index.js";
+import { getSeniorPoolV2Contract } from "./types/seniorpoolv2/index.js";
 
 async function wrtOnBlock(block: Block, ctx: WithdrawalRequestTokenContext) {
     const totalSupply = await ctx.contract.totalSupply()
     ctx.meter.Gauge("wrt_total_supply").record(totalSupply)
     const seniorPool = getSeniorPoolV2Contract(SENIOR_POOL_V2)
 
-    for (var i = 0; i < totalSupply.toNumber(); i++) {
+    for (var i = 0; i < totalSupply; i++) {
         const token = await ctx.contract.tokenByIndex(i)
         const withdrawal = await seniorPool.withdrawalRequest(token, { blockTag: block.number })
         const amount = scaleDown(withdrawal.fiduRequested, FIDU_DECIMAL)
@@ -58,7 +58,7 @@ async function withdrawlCanceled(evt: WithdrawalCanceledEvent, ctx: SeniorPoolV2
 
 
 WithdrawalRequestTokenProcessor.bind({address: WRT_ADDR})
-.onBlock(wrtOnBlock)
+.onBlockInterval(wrtOnBlock)
 
 SeniorPoolV2Processor.bind({address: SENIOR_POOL_V2, startBlock: SENIOR_POOL_V2_START})
 .onTimeInterval(seniorPoolOnBlock, 5, 300)

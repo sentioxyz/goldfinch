@@ -1,3 +1,3 @@
-require("./borrower")
-require("./withdrawal")
-require("./membership")
+import "./borrower.js"
+import "./withdrawal.js"
+import "./membership.js"

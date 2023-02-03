@@ -1,19 +1,17 @@
-import type {BigNumber} from 'ethers'
-import { 
+import {
     STAKED_FIDU,
     POOL_TOKEN
-} from "./constant";
+} from "./constant.js";
 
-export const SECONDS_PER_DAY = 60 * 60 * 24
+export const SECONDS_PER_DAY = 60n * 60n * 24n
 export const DAYS_PER_YEAR = 365
 
-export function isPaymentLate(timestemp: BigNumber, nextDueTime: BigNumber, balance: BigNumber) {
-    return balance.gt(0) && timestemp.gt(nextDueTime)
-
+export function isPaymentLate(timestemp: bigint, nextDueTime: bigint, balance: bigint) {
+    return balance > 0n && timestemp > nextDueTime
 }
 
-export function isPaymentLateForGracePeriod(timestemp: BigNumber, nextDueTime: BigNumber, gracePeriodLateness: BigNumber, balance: BigNumber) {
-    return balance.gt(0) && timestemp.gt(nextDueTime.add(gracePeriodLateness.mul(SECONDS_PER_DAY)))
+export function isPaymentLateForGracePeriod(timestemp: bigint, nextDueTime: bigint, gracePeriodLateness: bigint, balance: bigint) {
+    return balance > 0 && timestemp > (nextDueTime  + gracePeriodLateness * SECONDS_PER_DAY)
 }
 
 export function getAssetType(assetAddress: string) {

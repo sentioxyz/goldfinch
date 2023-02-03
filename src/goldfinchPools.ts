@@ -1,4 +1,4 @@
-{"data":
+export const goldfinchPools = {"data":
     [
       {
         "auto": true,

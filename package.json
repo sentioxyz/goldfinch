@@ -2,18 +2,18 @@
   "name": "@sentio/goldfinch",
   "version": "1.0.0",
   "dependencies": {
-    "@sentio/sdk": "^1.38.1-rc.2"
+    "@sentio/sdk": "^2.0.0-rc.24"
   },
+  "type": "module",
   "devDependencies": {
-    "@sentio/cli": "^1.1.3",
-    "@types/jest": "^28.0.0",
-    "jest": "^28.0.1",
-    "ts-jest": "^28.0.8",
-    "typescript": "~4.7.2"
+    "@sentio/cli": "^2.0.0-rc.13",
+    "typescript": "^4.9.5"
   },
   "scripts": {
-    "start": "processor_server ./dist/lib",
+    "start": "processor-runner $PWD/dist/lib.js",
+    "start-ts": "ts-node-esm node_modules/@sentio/runtime/lib/processor-runner.js $PWD/src/processor.ts",
     "build": "sentio build",
-    "upload": "sentio upload"
+    "upload": "sentio upload",
+    "test": "sentio test"
   }
 }
